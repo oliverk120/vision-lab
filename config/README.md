@@ -1,6 +1,6 @@
 # Configuration specification
 
-[example.toml](example.toml) is a proposed Milestone 1 experiment configuration, not a working runtime configuration. No loader or validator exists yet. All units are explicit; original media remains read-only. These settings are hypotheses and can be revised with documented reasons.
+[example.toml](example.toml) is a proposed Milestone 1 experiment configuration, not a working runtime configuration. The UI validates settings and the experiment runner saves resolved JSON. This TOML remains a readable example; TOML import is not implemented. All units are explicit; original media remains read-only. These settings are hypotheses and can be revised with documented reasons.
 
 | Field | Meaning and future validation |
 | --- | --- |
@@ -19,3 +19,5 @@
 Record the full resolved configuration with each run. Runtime stream changes create logged revisions effective at the next arrival; they must not retrospectively change earlier results. The source's observed dimensions/FPS are metadata, never forced to 1080p/30. Sample rate above source cadence does not synthesize frames.
 
 Initial B rate is a preview sampling default, **not** the future detector schedule. Startup/60-second idle/1-second active/burst scheduling belongs to Milestone 4 and is deliberately absent here. No model, motion, training, or tiered-retention settings are enabled.
+
+The workbench also stores evaluation configuration (threshold, minimum event duration, allowable gap, matching tolerance, maximum sample hold) in each run. See `../docs/evaluation.md`. Stream-setting changes reset the UI replay session in the initial implementation.

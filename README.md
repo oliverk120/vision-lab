@@ -6,9 +6,15 @@ The intended system combines **high-quality video capture, cheap continuous anal
 
 ## Current status
 
-**Milestone 0: architecture and repository scaffolding only.** There is no runnable application, video pipeline, dependency environment, or test suite yet. Configuration examples describe future behavior; they are not executable implementations. No footage or model weights are included.
+**Milestone 1 workbench implemented:** local video library, timestamp-aware replay/cache, derived-stream frame explorer, portable annotations, batch experiments, evaluation and side-by-side results. Only deterministic mock detectors are included; no real motion algorithms or neural models yet.
 
-The next milestone builds video infrastructure and a browser interface; motion detection and neural inference come later. See the [Milestone 1 plan](docs/milestone-1.md).
+Open a GitHub Codespace, wait for setup, then run from the repository root:
+
+```sh
+uv run --locked streamlit run app/main.py
+```
+
+Open the private forwarded port **8501**. Run automated checks with `uv run --locked pytest -q`. See [operation and limitations](docs/development.md) and [evaluation rules](docs/evaluation.md). No footage or model weights are included.
 
 ## Intended workflow
 
@@ -51,18 +57,19 @@ Derived streams use the same ingested timeline. They may consume frames directly
 | `src/vision_lab/streams/` | Resize, color conversion, timestamp-based sampling |
 | `src/vision_lab/motion/` | Classical motion and visual-change analysis, Milestone 2 |
 | `src/vision_lab/detection/` | Pretrained/custom model inference, Milestone 3 onward |
+| `src/vision_lab/experiments/` | Batch runner, result storage and explicit evaluation |
 | `src/vision_lab/controller/` | Scheduling, state, escalation, Milestone 4 |
-| `app/` | Browser UI, beginning in Milestone 1 |
-| `tests/` | Future automated timing, cache, sampling, and model tests |
+| `app/` | Four-tab Streamlit workbench |
+| `tests/` | Automated timing, cache, sampling, scoring, storage and UI tests |
 | `config/` | Human-readable experiment configuration specifications |
 | `data/` | Local recordings, extracted frames, datasets; contents ignored |
 | `runs/` | Local metrics, outputs, checkpoints; contents ignored |
 
 ## Development and storage
 
-GitHub is the source of truth; GitHub Codespaces is the proposed primary editor and runtime, with a privately forwarded Streamlit port. Codex cloud can also edit and test the project. The user primarily directs agents with natural-language requests.
+GitHub is the source of truth; GitHub Codespaces is the primary target editor and runtime, with a privately forwarded Streamlit port. Codex cloud can also edit and test the project. The user primarily directs agents with natural-language requests.
 
-Python 3.12, uv-managed locked dependencies, PyAV/FFmpeg, OpenCV, and Streamlit are proposed for Milestone 1. PyTorch and model packages arrive only when needed. CPU execution is the default. No installation is needed to review this scaffold.
+Python 3.12, uv-managed locked dependencies, PyAV/FFmpeg, OpenCV headless, and Streamlit power Milestone 1. PyTorch and model packages arrive only when needed. CPU execution is the default.
 
 Never modify original recordings. Keep footage, datasets, credentials, and model files out of Git. Codespaces and cloud workspaces are disposable: separately back up valuable recordings, labels, and checkpoints. Only sanitized configuration and compact, reviewed experiment summaries belong in Git.
 

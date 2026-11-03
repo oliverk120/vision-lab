@@ -42,3 +42,13 @@ These are initial design choices, not evidence that the proposed system is effic
 ## New decision template
 
 Record ID, date, status (proposed/accepted/superseded), problem, options, chosen approach, rationale, consequences, test/experiment links, and revisit condition. A performance claim needs evidence in [experiments](experiments.md).
+
+## Milestone 1 implementation decisions — 2026-11-03
+
+- **D13 (accepted): expanded workbench scope.** The user's M1 request supersedes the original video-only scope: implement library/annotations, plugin interface, mock runner, evaluation and results now; actual motion algorithms remain M2.
+- **D14 (accepted): explicit inspection versus replay.** Full-file gallery/original inspection is necessary for labeling and cannot share the replay availability restrictions. Only the replay/cache path feeds causal consumers; inspection does not mutate arrival state.
+- **D15 (accepted): conservative exact random access.** Decode from the beginning for frame lookups, preserving duplicate PTS/sequence mapping. Compact indexes are kept without pixel histories. This is slower on long footage; measure before introducing a keyframe-aware random-access cache.
+- **D16 (accepted): cooperative UI replay.** A bounded Streamlit fragment owns playback, with no background worker lifecycle. Source sampling is independent of UI refresh; lag is visible. Changed stream settings reset the session rather than introducing mid-epoch revision machinery.
+- **D17 (accepted): explicit incomplete ground truth.** Half-open interval labels, excluded unknown time, sample-hold duration limits, separate event/time/video metrics, and one-to-one tolerant event matching. See evaluation.md for formulas and limitations.
+- **D18 (accepted): local files and trusted plugins.** Atomic JSON plus CSV and optional PNG artifacts; UUID identities; annotation import matches immutable source hashes. Sequential Cartesian batches avoid orchestration. Model/plugin isolation is an API boundary, not a Python sandbox.
+- **D19 (accepted): tested locked tooling.** Python 3.12 with PyAV, OpenCV headless, Streamlit, Pillow, NumPy and pytest. No PyTorch or production detector. Codespaces definition uses uv 0.12.23 with committed uv.lock.

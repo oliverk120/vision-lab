@@ -1,4 +1,4 @@
-# Design example only; no application or loader exists in Milestone 0.
+# UI defaults illustration; the application saves resolved run settings as JSON.
 schema_version = 1
 
 [source]

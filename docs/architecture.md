@@ -1,6 +1,6 @@
 # Architecture
 
-Status: design contract for incremental implementation, not implemented behavior. Initial values are hypotheses, not proven optimal settings. See [decisions](decisions.md) for alternatives and deferred choices.
+Status: core Milestone 1 contracts are implemented; future model/controller sections remain design guidance. See `docs/development.md` for implementation limits and `docs/evaluation.md` for the expanded workbench. Initial values are hypotheses, not proven optimal settings. See [decisions](decisions.md) for alternatives and deferred choices.
 
 ## Components and information flow
 
@@ -55,7 +55,7 @@ Two modes share the same pipeline:
 
 Every seek, restart, and loop creates a new epoch, cancels pending work, clears cache availability and sampler/controller/temporal state, and rejects stale results. Retain old run logs tagged with their epoch. For a seek to `t`, decode from a preceding keyframe privately, discard preroll, then publish the first frame at or after `t`. Earlier footage is not available merely because it exists in the file. Pause seek playback until play is requested. Restart is seek-to-zero. Loop resets to zero and resumes, recording a loop/epoch event. No state is silently carried across boundaries.
 
-The UI's original-video preview follows this same arrived timeline. Full-file browser playback or seeking outside the replay controls must not become a second source of frames or advance cache availability. Controls may request a seek, but consumers only see the new epoch's published frames.
+The simulated-camera preview follows the arrived timeline. The user's expanded Milestone 1 also requires an explicitly separate, unrestricted dataset-inspection mode: the Library original player and Frame Explorer gallery can inspect any source frame for labeling. They never advance cache availability or feed replay consumers. Replay controls seek into a new epoch; downstream processing still sees only published frames.
 
 ## High-resolution rolling cache
 
@@ -85,7 +85,7 @@ Initial Stream A: 64×64 grayscale at 15 FPS. Initial Stream B: 320×320 RGB at 
 
 Proposed deterministic sampler: anchor a target grid to the requested epoch start; for each ingested frame, emit it once if its PTS meets or exceeds the next target. Attach both target and actual source timestamps. Advance the grid past the emitted PTS; count crossed targets as missed rather than duplicating the frame. Equal-PTS frames do not create extra samples. Rates above source cadence never fabricate frames. Compute grid times with rational arithmetic, not cumulative float additions. Streams independently sample the same ordered arrivals. Neither stream's compute speed changes its media schedule.
 
-Mid-run setting changes are explicit recorded configuration revisions effective at the next arrival; re-anchor the affected sampler there. Resize/color transforms do not change source timestamps. Display lag, skipped target slots, source gaps, and actual sample rates rather than implying uniform frame intervals. A bounded UI refresh queue may replace old display frames, but must not change core sampling results.
+The initial UI starts a fresh replay session on stream setting/retention changes. Each experiment snapshots fixed settings. Mid-run revisions without resetting the session remain a future extension. Resize/color transforms do not change source timestamps. Display lag, skipped target slots, source gaps, and actual sample rates rather than implying uniform frame intervals. A bounded UI refresh queue may replace old display frames, but must not change core sampling results.
 
 ## Models, controller, and future results
 
@@ -102,3 +102,7 @@ When expensive inference arrives, use bounded worker queues and explicit overloa
 Milestone 1 UI: upload MP4/MOV, source preview, play/pause/resume/restart/seek/loop/speed/mode controls, simulated timestamp, arrival watermark, retained range, both derived streams and settings, actual frame timestamps, sample gaps, lag, throughput, decode/transform durations, and memory observations. Keep background playback state separate from Streamlit reruns; pause must actually stop clock advancement. Later add motion heatmaps, boxes/counts/confidence, escalation history, latency, training controls, and comparisons.
 
 No model inference, motion algorithms, tiered storage, training framework, or external services are required for Milestone 1.
+
+## Expanded Milestone 1 workbench
+
+The user expanded M1 to include a local UUID video library, editable/portable video and interval annotations, a gallery inspection path, plugin contracts, a sequential batch runner, evaluation, and comparison UI. These are implemented independently of future real motion detection. Originals remain immutable; SQLite/cloud services were unnecessary. Compact timestamp indexes and on-demand frame decoding avoid retaining entire decoded recordings. Annotation and result formats are described in `docs/development.md` and scoring in `docs/evaluation.md`.

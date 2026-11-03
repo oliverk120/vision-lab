@@ -1,29 +1,49 @@
-# Proposed development environment
+# Development and operation
 
-Milestone 0 is documentation only. There is no install command, app entry point, lockfile, or runnable test suite yet. Do not install runtime dependencies just to review this repository.
+Python 3.12, CPU execution, uv lockfile, PyAV/FFmpeg libraries, OpenCV headless, and Streamlit. No PyTorch, model downloads, database, or external service is needed. GitHub is the source of truth; Codespaces is the primary supported development target. Use the existing checkout in isolated Codex cloud tasks; do not create worktrees unless requested.
 
-## Milestone 1 proposal
+## GitHub Codespaces
 
-Use GitHub Codespaces as the primary browser editor/runtime. GitHub remains the source of truth. Use the existing checkout in isolated Codex cloud tasks; create no worktree unless explicitly requested.
+1. Open the repository on GitHub, choose **Code → Codespaces → Create codespace on main**.
+2. Wait for `.devcontainer/devcontainer.json` to install uv and execute `uv sync --locked`.
+3. In the repository terminal, run:
 
-- Python 3.12, CPU execution by default.
-- uv for project metadata, isolated `.venv`, and a committed `uv.lock`. Pin the selected uv/Python version in the future environment configuration, commit dependency declarations with the lockfile, and use frozen/locked sync for repeat installs. Do not guess package pins before checking compatibility.
-- PyAV for timestamp-aware decode and random access through FFmpeg libraries. Record PyAV and linked FFmpeg versions; validate the selected wheel supports phone MP4/MOV codecs. A separate FFmpeg CLI is optional for inspection/fixture generation when needed, not assumed available from a PyAV wheel.
-- OpenCV headless for resize, grayscale, and later classical motion processing; avoid desktop GUI packages in cloud environments.
-- Streamlit for controls and observable intermediate frames. Proposed development port: 8501, privately forwarded in Codespaces. Document the actual entry point and command when it exists.
-- pytest and minimal appropriate development checks; core timing tests use fake clocks. Validate on Linux CPU first.
-- TOML configuration can use Python 3.12's standard-library `tomllib`; no YAML dependency required.
+   ```sh
+   uv run --locked streamlit run app/main.py
+   ```
 
-The future `.devcontainer` should provision only the needed Python/toolchain/runtime dependencies, perform locked install, and document manual app startup. Do not start nonexistent services in Milestone 0. A fresh Codespace must reproduce the install, not rely on an old terminal session. In Codex cloud, save tested install/start instructions only after runtime implementation; running processes do not survive environment snapshots. No cloud runtime configuration is needed for this documentation-only milestone.
+4. Open the forwarded **8501** port from the Codespaces Ports panel. Keep port visibility private. No Python/video installation is required on your own computer.
 
-## Later dependencies
+A process must be started in each new workspace; snapshots do not preserve a running server. Stop with Ctrl+C. To refresh dependencies without changing the lockfile: `uv sync --locked`. Run tests: `uv run --locked pytest -q`. The container definition is provided; an actual hosted Codespace launch must still be checked by a user with Codespaces access. Local cloud validation is not proof of hosted port forwarding.
 
-Milestone 3 selects a small CPU-compatible detector after checking code/weight licenses and provenance; add PyTorch/model packages only as required. Milestone 6 adds training dependencies and reproducibility controls. GPU packages, CUDA provisioning, model downloads, databases, and hosted services are not prerequisites now.
+## Workbench
 
-Typical future dependency destinations are PyPI/package artifact hosts. Model artifact destinations and any external credentials must be justified when chosen; none are needed for this scaffold. Keep TLS/checksum verification enabled. Do not put secrets in committed configuration.
+- **Video Library:** add multiple MP4/MOV files, expand a recording, load its original player on demand, edit its name/notes and video/interval labels. Export annotations as JSON. Imports match source SHA-256 even if a new upload has a different UUID. Delete requires a checkbox and removes local originals/annotations plus that video's generated experiment combinations; other batch results remain.
+- **Frame Explorer:** choose a recording and independent A/B settings. Play, pause, change speed, seek, restart, loop, or use accelerated offline mode. Camera cache lookups reject future/expired data. The separate gallery browses the full dataset for annotation: choose chronological thumbnails, step samples, view nearest-neighbour/interpolated enlargement, source correspondence, pixel values, and absolute differences. Export one PNG or a timestamped ZIP range/whole stream.
+- **Experiments:** select videos, mock algorithms, period configurations, stream settings, and evaluation rules. One batch runs the Cartesian product. Development and holdout are selectable; no automatic tuning. Only timestamp-driven synthetic mocks exist now.
+- **Results:** filter algorithms, sort table headers, inspect video confusion and temporal metrics, charts, labeled/predicted intervals, diagnostic FP/FN frames and side-by-side transforms. Export/import portable results; source footage is separate.
 
-## Data and experiment safety
+## Storage
 
-Upload/copy footage into ignored `data/` without overwriting originals. Put generated results and checkpoints in ignored `runs/`. Back up valuable material to user-chosen durable storage separately; Codespaces/cloud disks are disposable. Do not automatically upload private recordings. Review staged filenames and content even with ignore rules in place.
+- `data/videos/<uuid>/original.mp4` (or `.mov`), `metadata.json`, `annotations.json`.
+- `data/cache/exports/<uuid>/frames.zip` only when requested; regenerable thumbnails are held in a bounded memory cache.
+- `runs/<experiment-uuid>/config.json`, then `<combination-uuid>/predictions.json`, `predictions.csv`, `metrics.json`, optional `artifacts/*.png`.
 
-When implementing functionality, document exact working directories, install, startup, readiness and test commands here. Report automated tests separately from browser and real-footage acceptance checks.
+Set `VISION_LAB_DATA` and `VISION_LAB_RUNS` for different local roots (used by tests). No secrets are required. Back up **original footage plus annotation JSON exports and result ZIPs** to user-chosen durable storage; Codespaces disks are disposable. `.gitignore` excludes data/runs, media, model artifacts and secrets. Review staged files before committing.
+
+## Limits and deliberate simplifications
+
+- Upload limit: **512 MiB per file**, configured in Streamlit and checked by the library. Streamlit buffers compressed uploads/downloads and original playback media; load original players only when wanted. Split very long recordings externally without modifying your originals. Disk-full/unsupported-file errors are displayed; failed uploads are cleaned up.
+- Decoding/indexing uses bounded image memory; the compact timestamp index grows with frame count. Random access currently decodes from the beginning for reliable exact sequence IDs, so long-video seeking can be slow. Gallery pages decode in one pass. No permanent thousands-of-image cache is generated.
+- Replay is cooperative and ticks every 0.2 seconds, up to 32 frames per tick. This is a diagnostic preview, not smooth 30-FPS browser video. Every source frame is processed; the UI shows latest images, so display refreshes skip intermediate images. Lag is visible. Offline experiments run directly without UI pacing. Long batches block that session until done; no worker service or cancellation control yet.
+- Changing stream settings or retention starts a fresh replay session. Settings are saved in experiment manifests. The initial TOML is a documented example, not a separate import path. No compressed cache clip export yet; frame/interval/crop APIs and gallery PNG/ZIP exports are implemented.
+- Playback pause freezes simulated time; it does not mean the entire original file is unavailable in **explicit dataset-inspection mode**. Only replay/cache consumers have causal access.
+- PyAV supports codecs available in its linked FFmpeg build. Right-angle display rotation is applied when exposed by decoded frames. Browser native original playback depends on browser codec support (e.g. HEVC/MOV may not play); decoded galleries/replay remain available. HDR color management, audio playback in simulated mode, arbitrary orientation transforms, and damaged timestamp repair are not implemented. Missing/nonmonotonic timestamps fail explicitly.
+- Predictions and result tables are compact in-memory metadata per combination, appropriate for short-video datasets. Very long runs/large debug-image outputs need streaming metadata and paginated result tables later. Result ZIP imports are limited to 100 MiB uncompressed; export requires enough RAM for the archive. Frame ZIP generation streams image encoding to disk, but browser download is buffered.
+- This is a single-user local workbench. Atomic JSON writes prevent partial files, not concurrent multi-user edits. Plugins are trusted code. No authentication, production serving, or live-camera adapter is implemented.
+
+## Add the first detector in Milestone 2
+
+Implement a class matching `vision_lab.motion.Detector`: `name`, `version`, `reset()`, and `process(sample) -> Prediction`. Register a factory in `REGISTRY`. Keep background state inside the instance and reset it for each video/configuration. The sample carries pixels, source frame identity and timestamps, sampling target, and spatial transform. Do not read source files or use future frames. Emit optional scores in [0,1], masks/debug images, and explain normalization. The runner measures processing time and persists provenance/results automatically.
+
+Start with one straightforward frame-difference baseline, then illumination-sensitive synthetic cases and real labeled development recordings. Preserve the original hypotheses, compare misses/false alarms and cost, and inspect failures before adding further methods. Holdout footage must remain out of parameter tuning.

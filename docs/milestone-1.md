@@ -1,4 +1,6 @@
-# Milestone 1 implementation plan
+# Milestone 1 original implementation plan
+
+Historical video-only plan retained for context. The subsequent user request expanded this milestone to the library, annotations, mock experiment runner and evaluation workbench. See `development.md` for current operation/limits and `validation.md` for evidence. Actual motion algorithms remain out of scope.
 
 Goal: make a phone recording behave like a camera, with a trustworthy high-resolution timeline and two observable derived streams. No motion detection, pretrained models, scheduling controller, tracking, training, or tiered retention.
 
