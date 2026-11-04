@@ -1,0 +1,6 @@
+# Exact versions keep results repeatable. Install: python -m pip install -r requirements.txt
+av==17.1.0          # video decoding with exact timestamps (FFmpeg)
+numpy==2.5.4        # pixel arrays
+pillow==12.3.0      # resizing and greyscale conversion
+streamlit==1.66.1   # the website
+pytest==9.2.0       # automated tests

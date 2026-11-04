@@ -1,57 +1,102 @@
-"""Streamlit executes real widget callbacks; no browser server required."""
+"""The website (rendered by Streamlit's test runner) and python start.py."""
 import io
+import os
+import socket
+import subprocess
+import sys
+import time
 from pathlib import Path
+
 from streamlit.testing.v1 import AppTest
-from vision_lab.library import Library
+
+from vision_lab.video import save_upload
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
-def widget(elements,label):
-    return next(e for e in elements if e.label==label)
+def run_app(tmp_path, monkeypatch):
+    monkeypatch.setenv("VISION_LAB_DATA", str(tmp_path / "data"))
+    return AppTest.from_file(str(ROOT / "app.py"), default_timeout=30).run()
 
 
-def assert_healthy(app):
+def assert_ok(app):
     assert not app.exception, [e.message for e in app.exception]
-    assert not app.error, [e.value for e in app.error]
 
 
-def test_empty_app(tmp_path,monkeypatch):
-    monkeypatch.setenv('VISION_LAB_DATA',str(tmp_path/'data'))
-    monkeypatch.setenv('VISION_LAB_RUNS',str(tmp_path/'runs'))
-    app=AppTest.from_file(Path('app/main.py').resolve(),default_timeout=20).run()
-    assert_healthy(app)
-    assert [tab.label for tab in app.tabs]==['Video Library','Frame Explorer','Experiments','Results']
+def captions(app):
+    def walk(node):
+        yield node
+        for child in getattr(node, "children", {}).values():
+            yield from walk(child)
+    return [i.caption for n in walk(app._tree) if getattr(n, "type", "") == "image" for i in n.proto.imgs]
 
 
-def test_library_gallery_annotations_replay_and_results(video,tmp_path,monkeypatch):
-    root=tmp_path/'data'
-    runs=tmp_path/'runs'
-    library=Library(root)
-    meta=library.add(io.BytesIO(video.read_bytes()),'Synthetic moving object.mp4')
-    monkeypatch.setenv('VISION_LAB_DATA',str(root))
-    monkeypatch.setenv('VISION_LAB_RUNS',str(runs))
-    app=AppTest.from_file(Path('app/main.py').resolve(),default_timeout=30).run()
-    assert_healthy(app)
-    widget(app.selectbox,'Contains physical motion').set_value('Yes')
-    widget(app.button,'Save video labels').click().run()
-    assert_healthy(app)
-    assert library.annotations(meta['id'])['motion']=='Yes'
-    widget(app.selectbox,'Target motion during this interval').set_value('Yes')
-    widget(app.button,'Save interval').click().run()
-    assert_healthy(app)
-    assert len(library.annotations(meta['id'])['intervals'])==1
-    widget(app.button,'Next sampled frame').click().run()
-    assert_healthy(app)
-    widget(app.button,'Play / Resume').click().run()
-    assert_healthy(app)
-    widget(app.button,'Pause').click().run()
-    widget(app.number_input,'Seek to source second').set_value(.5)
-    widget(app.button,'Seek (starts a fresh paused epoch)').click().run()
-    assert_healthy(app)
-    assert app.session_state['replay'].position==.5
-    widget(app.multiselect,'Videos').set_value([meta['id']]).run()
-    widget(app.button,'Run batch').click().run()
-    assert_healthy(app)
-    assert list(runs.glob('*/config.json'))
-    assert any(e.label=='Per-video algorithm/configuration' for e in app.selectbox)
-    widget(app.selectbox,'Inspect prediction outcome').set_value('FN').run()
-    assert_healthy(app)
+def test_empty_app(tmp_path, monkeypatch):
+    app = run_app(tmp_path, monkeypatch)
+    assert_ok(app)
+    assert "Upload a video" in app.sidebar.info[0].value
+
+
+def test_views(video30, tmp_path, monkeypatch):
+    save_upload(io.BytesIO(video30.read_bytes()), "clip.mp4", tmp_path / "data")
+    app = run_app(tmp_path, monkeypatch)
+    assert_ok(app)
+    app.button[0].click().run()  # Play
+    assert_ok(app)
+    assert app.session_state.camera.playing
+    app.radio[0].set_value("Frame browser").run()
+    assert_ok(app)
+    assert not app.session_state.camera.playing  # leaving the camera view pauses it
+    tile = next(b for b in app.button if b.label == "0.133 s")  # third Stream A sample
+    tile.click().run()
+    assert_ok(app)
+    assert any(c.startswith("Original frame #4 at 0.133 s · 160×90") for c in captions(app))
+    assert "Absolute pixel difference (bright = changed)" in captions(app)
+    assert any(m.label == "Mean difference" for m in app.metric)
+    app.radio[1].set_value("B").run()
+    assert_ok(app)
+    app.radio[0].set_value("Original video").run()
+    assert_ok(app)
+
+
+def free_port():
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        return s.getsockname()[1]
+
+
+def test_start_script(tmp_path):
+    """Starts once, opens the forwarded Codespaces address, and never starts a duplicate."""
+    port = free_port()
+    opened = tmp_path / "opened.txt"
+    browser = tmp_path / "browser"
+    browser.write_text(f'#!/bin/sh\necho "$1" >> {opened}\n')
+    browser.chmod(0o755)
+    env = dict(os.environ, VISION_LAB_PORT=str(port), VISION_LAB_DATA=str(tmp_path / "data"), BROWSER=str(browser),
+               CODESPACE_NAME="test-space", GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN="app.github.dev")
+    start = [sys.executable, str(ROOT / "start.py")]
+    server = subprocess.Popen(start, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    try:
+        for _ in range(300):
+            if opened.exists():
+                break
+            time.sleep(0.2)
+        url = f"https://test-space-{port}.app.github.dev"
+        assert opened.read_text().split() == [url]
+
+        second = subprocess.run(start, env=env, capture_output=True, text=True, timeout=60)
+        assert second.returncode == 0 and "already running" in second.stdout
+        assert opened.read_text().split() == [url, url]  # reopened, not restarted
+        assert server.poll() is None
+    finally:
+        server.terminate()  # like closing the terminal
+        server.wait(timeout=30)
+    with socket.socket() as probe:
+        assert probe.connect_ex(("127.0.0.1", port)) != 0  # Streamlit stopped too, nothing orphaned
+
+    with socket.socket() as blocker:  # a different program holding the port
+        blocker.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        blocker.bind(("127.0.0.1", port))
+        blocker.listen()
+        third = subprocess.run(start, env=env, capture_output=True, text=True, timeout=60)
+    assert third.returncode == 1 and "used by another program" in third.stdout
