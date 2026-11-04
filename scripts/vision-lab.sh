@@ -11,6 +11,9 @@
 #   logs     Follow the background server's log.
 set -euo pipefail
 
+# pip installs uv into ~/.local/bin, which non-interactive shells may not have on PATH.
+export PATH="$HOME/.local/bin:$PATH"
+
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PORT="${VISION_LAB_PORT:-8501}"
 STATE="${VISION_LAB_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/vision-lab}"

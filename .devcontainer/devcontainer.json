@@ -1,8 +1,10 @@
 {
   "name": "Vision Lab (CPU)",
   "image": "mcr.microsoft.com/devcontainers/python:1-3.12-bookworm",
-  // One-time setup when the Codespace is created.
-  "postCreateCommand": "python -m pip install uv==0.12.23 && uv sync --locked",
+  // pip installs uv into ~/.local/bin; put it on PATH for lifecycle commands and terminals.
+  "remoteEnv": {"PATH": "/home/vscode/.local/bin:${containerEnv:PATH}"},
+  // One-time setup when the Codespace is created ("python -m uv" works even without PATH).
+  "postCreateCommand": "python -m pip install --user uv==0.12.23 && python -m uv sync --locked",
   // Runs on every start, including resuming a stopped Codespace. Safe to repeat: never starts a second server.
   "postStartCommand": "bash scripts/vision-lab.sh start",
   // Runs whenever VS Code connects, restarting the website if it was stopped in the meantime.
