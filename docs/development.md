@@ -5,16 +5,19 @@ Python 3.12, CPU execution, uv lockfile, PyAV/FFmpeg libraries, OpenCV headless,
 ## GitHub Codespaces
 
 1. Open the repository on GitHub, choose **Code → Codespaces → Create codespace on main**.
-2. Wait for `.devcontainer/devcontainer.json` to install uv and execute `uv sync --locked`.
-3. In the repository terminal, run:
+2. Wait for setup (`.devcontainer/devcontainer.json` installs uv and runs `uv sync --locked`). Vision Lab then **starts automatically** in the background and port **8501** is forwarded privately. The first time, a browser tab opens; if your browser blocks it, use the notification or Ports panel.
+3. Nothing else is needed. The website also restarts automatically whenever the Codespace starts, resumes, or VS Code reconnects.
 
-   ```sh
-   uv run --locked streamlit run app/main.py
-   ```
+| To… | Do this |
+| --- | --- |
+| Open the website | **Terminal → Run Task… → Vision Lab: Open website**, or Ports panel → globe icon beside *Vision Lab (8501)* |
+| Run it in a visible terminal | **Run and Debug → Run Vision Lab** (F5). This stops the background copy first; Ctrl+C stops it |
+| Restart after code changes | Task **Vision Lab: Restart** (Streamlit also offers *Rerun* in the page for app edits) |
+| Stop / check / view log | Tasks **Vision Lab: Stop**, **Vision Lab: Status**, **Vision Lab: Show log** |
 
-4. Open the forwarded **8501** port from the Codespaces Ports panel. Keep port visibility private. No Python/video installation is required on your own computer.
+All of these call `scripts/vision-lab.sh` (`start`, `run`, `stop`, `restart`, `status`, `open`, `logs`), which you can also run directly in a terminal. It guarantees **one server at a time**: a per-port lock serialises commands, a PID file identifies the server it started, `start` does nothing if it is already running, `run` replaces the background copy, and if port 8501 is held by something it did not start it refuses and names that process instead of launching a duplicate. The background log and PID file live in `~/.local/state/vision-lab/`, outside the repository. Manually running `uv run --locked streamlit run app/main.py` still works, but bypasses this protection—Streamlit will then report that port 8501 is in use.
 
-A process must be started in each new workspace; snapshots do not preserve a running server. Stop with Ctrl+C. To refresh dependencies without changing the lockfile: `uv sync --locked`. Run tests: `uv run --locked pytest -q`. The container definition is provided; an actual hosted Codespace launch must still be checked by a user with Codespaces access. Local cloud validation is not proof of hosted port forwarding.
+Codespaces stop after inactivity; the running website stops with them and comes back on resume. Keep port visibility **private**. Run tests: `uv run --locked pytest -q`. To refresh dependencies without changing the lockfile: `uv sync --locked`, then restart.
 
 ## Workbench
 

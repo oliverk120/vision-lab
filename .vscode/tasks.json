@@ -1,0 +1,11 @@
+{
+  // Terminal → Run Task… (or Ctrl/Cmd+Shift+P → "Tasks: Run Task").
+  "version": "2.0.0",
+  "tasks": [
+    {"label": "Vision Lab: Open website", "type": "shell", "command": "./scripts/vision-lab.sh open", "problemMatcher": []},
+    {"label": "Vision Lab: Restart", "type": "shell", "command": "./scripts/vision-lab.sh restart", "problemMatcher": []},
+    {"label": "Vision Lab: Stop", "type": "shell", "command": "./scripts/vision-lab.sh stop", "problemMatcher": []},
+    {"label": "Vision Lab: Status", "type": "shell", "command": "./scripts/vision-lab.sh status", "problemMatcher": []},
+    {"label": "Vision Lab: Show log", "type": "shell", "command": "./scripts/vision-lab.sh logs", "isBackground": true, "problemMatcher": []}
+  ]
+}

@@ -19,6 +19,12 @@ These are initial design choices, not evidence that the proposed system is effic
 | D11 | Accepted | Standard codecs and local files; no database server, custom compression, or distributed system | Structured local results may need evolution as data grows |
 | D12 | Accepted | Source files immutable; Git stores code/docs/config, separate durable backup for valuable data | Requires explicit export/backup beyond disposable Codespaces disks |
 
+## Codespaces launch — 2026-11-04
+
+| ID | Status | Choice and rationale | Trade-off / revisit trigger |
+| --- | --- | --- | --- |
+| D13 | Accepted | Auto-start Streamlit via devcontainer `postStartCommand`/`postAttachCommand` calling one idempotent script (`scripts/vision-lab.sh`) with a lock and PID file; VS Code launch option and tasks call the same script. No supervisor, container service or other host | No automatic restart if the server crashes mid-session (use the Restart task); revisit if crashes become common |
+
 ## Open questions and decision gates
 
 | Question | Options and provisional direction | Decide when / evidence |

@@ -8,13 +8,7 @@ The intended system combines **high-quality video capture, cheap continuous anal
 
 **Milestone 1 workbench implemented:** local video library, timestamp-aware replay/cache, derived-stream frame explorer, portable annotations, batch experiments, evaluation and side-by-side results. Only deterministic mock detectors are included; no real motion algorithms or neural models yet.
 
-Open a GitHub Codespace, wait for setup, then run from the repository root:
-
-```sh
-uv run --locked streamlit run app/main.py
-```
-
-Open the private forwarded port **8501**. Run automated checks with `uv run --locked pytest -q`. See [operation and limitations](docs/development.md) and [evaluation rules](docs/evaluation.md). No footage or model weights are included.
+Open a GitHub Codespace and wait for setup. The website starts automatically (also after the Codespace resumes) and opens in a browser tab once. To reopen it later, use **Terminal → Run Task… → Vision Lab: Open website**, or the globe icon next to port **8501** in the Ports panel. **Run and Debug → Run Vision Lab** (F5) runs it in a terminal instead. See [Codespaces operation](docs/development.md#github-codespaces). Run automated checks with `uv run --locked pytest -q`. See [operation and limitations](docs/development.md) and [evaluation rules](docs/evaluation.md). No footage or model weights are included.
 
 ## Intended workflow
 

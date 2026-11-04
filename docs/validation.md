@@ -39,3 +39,7 @@ Browser scripts/screenshots and generated videos stayed outside Git. Initial bro
 - **Future algorithms:** all detector results remain synthetic. The first real motion baseline and accuracy evaluation belong to Milestone 2.
 
 Cloud install/start instructions were saved as a configuration draft. Saving does not publish a snapshot or prove fresh-task restoration. Review/save the environment settings and publish when desired.
+
+## Codespaces launcher — 2026-11-04
+
+Checked in a Linux cloud container (not a hosted Codespace): `scripts/vision-lab.sh` started Streamlit and passed its health check in about 6 seconds; a repeated `start` reused the same server; `restart`, foreground `run` replacing the background copy, and `stop` each left exactly one or zero listeners and no leftover processes. Two automated tests cover idempotent start/stop and refusal when another process holds the port (26 tests pass in total). **Not yet verified in a real Codespace:** that `postStartCommand` survives as a background process, the resume path, `openBrowserOnce`, and the VS Code launch/task entries.
