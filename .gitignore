@@ -1,69 +1,30 @@
-# Private media, datasets, and generated run artifacts: preserve empty roots only.
-/data/*
-!/data/.gitkeep
-/runs/*
-!/runs/.gitkeep
-
-# Recordings and model artifacts accidentally placed elsewhere (case-insensitive).
+# Your videos and any older experiment results stay on disk but never go into Git.
+/data/
+/runs/
 *.[mM][pP]4
 *.[mM][oO][vV]
 *.m4v
 *.avi
 *.mkv
 *.webm
-*.mpeg
-*.mpg
-*.mts
-*.m2ts
+
+# Model weights (for later milestones).
 *.pt
 *.pth
 *.ckpt
 *.onnx
 *.safetensors
-*.h5
-*.hdf5
-*.tflite
-*.npy
-*.npz
 
-# Local secrets and credentials; sanitized examples may be committed.
+# Secrets.
 .env
 .env.*
-!.env.example
-*.pem
-*.key
-*.p12
-*.pfx
-credentials.json
-secrets.toml
 .streamlit/secrets.toml
-.aws/
-.ssh/
 
-# Python environments, caches, build/test outputs.
+# Python and editor files.
 .venv/
-venv/
 __pycache__/
 *.py[cod]
 .pytest_cache/
-.mypy_cache/
-.ruff_cache/
-.uv-cache/
-.coverage
-.coverage.*
-htmlcov/
-coverage.xml
-build/
-dist/
-*.egg-info/
-.ipynb_checkpoints/
-*.log
-
-# Editor and operating-system local files.
-.DS_Store
-Thumbs.db
-.idea/
 .vscode/
-*.swp
-*.swo
-*~
+.idea/
+.DS_Store

@@ -1,30 +1,42 @@
 from fractions import Fraction
+
 import av
 import numpy as np
 import pytest
 
 
-def make_video(path, times=None, scene='moving'):
-    times = times or [i*100 for i in range(20)]
-    with av.open(str(path),'w') as container:
-        stream=container.add_stream('mpeg4',rate=10)
-        stream.width=64
-        stream.height=48
-        stream.pix_fmt='yuv420p'
-        stream.time_base=Fraction(1,1000)
-        stream.codec_context.time_base=Fraction(1,1000)
-        for i,t in enumerate(times):
-            pixels=np.full((48,64,3),20,dtype=np.uint8)
-            if scene=='moving':
-                pixels[16:24,(i*2)%48:(i*2)%48+8]=220
-            elif scene=='brightness':
-                pixels[:]=20 if i<10 else 180
-            elif scene=='short_event' and i==5:
-                pixels[16:24,20:28]=220
-            frame=av.VideoFrame.from_ndarray(pixels,format='rgb24')
-            frame.pts=t
-            frame.time_base=Fraction(1,1000)
-            for packet in stream.encode(frame):
+def make_video(path, times_ms, size=(64, 48), codec="mpeg4"):
+    """Small synthetic video: a white square moves one step per frame. Frame i has red value i."""
+    width, height = size
+    with av.open(str(path), "w") as container:
+        stream = container.add_stream(codec, rate=30)
+        stream.width, stream.height, stream.pix_fmt = width, height, "yuv420p"
+        stream.time_base = stream.codec_context.time_base = Fraction(1, 1000)
+        for i, t in enumerate(times_ms):
+            pixels = np.full((height, width, 3), 20, dtype=np.uint8)
+            x = (i * 4) % (width - 8)
+            pixels[8:16, x:x + 8] = 230
+            image = av.VideoFrame.from_ndarray(pixels, format="rgb24")
+            image.pts, image.time_base = t, Fraction(1, 1000)
+            for packet in stream.encode(image):
+                container.mux(packet)
+        for packet in stream.encode():
+            container.mux(packet)
+    return path
+
+
+def make_phone_video(path):
+    """3 seconds at exactly 30 FPS in a 1/90000 time base, as phones record, with B-frames (H.264)."""
+    with av.open(str(path), "w") as container:
+        stream = container.add_stream("libx264", rate=30, options={"bf": "2", "g": "15"})
+        stream.width, stream.height, stream.pix_fmt = 160, 90, "yuv420p"
+        stream.time_base = stream.codec_context.time_base = Fraction(1, 90000)
+        for i in range(90):
+            pixels = np.full((90, 160, 3), 20, dtype=np.uint8)
+            pixels[30:50, i:i + 20] = 230
+            image = av.VideoFrame.from_ndarray(pixels, format="rgb24")
+            image.pts, image.time_base = i * 3000, Fraction(1, 90000)
+            for packet in stream.encode(image):
                 container.mux(packet)
         for packet in stream.encode():
             container.mux(packet)
@@ -32,10 +44,11 @@ def make_video(path, times=None, scene='moving'):
 
 
 @pytest.fixture
-def video(tmp_path):
-    return make_video(tmp_path/'video.mp4')
+def video30(tmp_path):
+    return make_phone_video(tmp_path / "phone.mp4")
 
 
 @pytest.fixture
 def vfr(tmp_path):
-    return make_video(tmp_path/'vfr.mov',[1000,1100,1250,1500,1900,2000])
+    """Variable frame rate MOV whose first timestamp is not zero."""
+    return make_video(tmp_path / "vfr.mov", [1000, 1100, 1250, 1500, 1900, 2000])

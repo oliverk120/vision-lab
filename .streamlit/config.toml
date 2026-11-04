@@ -2,7 +2,10 @@
 headless = true
 address = "0.0.0.0"
 port = 8501
-maxUploadSize = 512
+maxUploadSize = 512  # MB per file
+
+[client]
+toolbarMode = "minimal"  # hides Streamlit's "Deploy" button: Vision Lab runs only in your Codespace
 
 [browser]
 gatherUsageStats = false
