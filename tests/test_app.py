@@ -34,7 +34,8 @@ def captions(app):
 def test_empty_app(tmp_path, monkeypatch):
     app = run_app(tmp_path, monkeypatch)
     assert_ok(app)
-    assert "Upload a video" in app.sidebar.info[0].value
+    assert "Upload a video" in app.info[0].value
+    assert not app.sidebar  # phones hide the sidebar, so nothing essential may live there
 
 
 def test_views(video30, tmp_path, monkeypatch):

@@ -52,9 +52,10 @@ def seconds(t):
     return f"{float(t):.3f} s"
 
 
-# ---- Sidebar: upload and choose a video -------------------------------------------------------
-with st.sidebar:
-    st.header("Vision Lab")
+# ---- Add and choose videos (on the main page, because phones hide the sidebar) -----------------
+st.title("Vision Lab")
+videos = dict((str(path), name) for name, path in list_videos(DATA))
+with st.expander("Add videos", expanded=not videos):
     round_ = st.session_state.setdefault("upload_round", 0)
     uploads = st.file_uploader("Upload MP4/MOV videos", type=["mp4", "mov"], accept_multiple_files=True,
                                key=f"upload-{round_}", help="Up to 512 MB per file. Originals are never modified.")
@@ -67,16 +68,14 @@ with st.sidebar:
                     st.session_state.upload_error = f"{upload.name}: {exc}"
         st.session_state.upload_round += 1  # clears the upload box so files are saved once
         st.rerun()
-    if error := st.session_state.pop("upload_error", None):
-        st.error(error)
-    videos = dict((str(path), name) for name, path in list_videos(DATA))
-    if not videos:
-        st.info("Upload a video from your phone to begin.")
-        st.stop()
-    path = st.selectbox("Video", list(videos), format_func=videos.get)
+if error := st.session_state.pop("upload_error", None):
+    st.error(error)
+if not videos:
+    st.info("Upload a video from your phone to begin.")
+    st.stop()
+path = st.selectbox("Video", list(videos), format_func=videos.get)
 
 video = open_video(path)
-st.subheader(videos[path])
 st.caption(f"{video.width}×{video.height} · {video.codec} · {len(video.times)} frames · "
            f"{seconds(video.duration)} · {'variable' if video.variable_frame_rate else 'constant'} frame rate")
 view = st.radio("View", ["Simulated camera", "Frame browser", "Original video"], horizontal=True,
